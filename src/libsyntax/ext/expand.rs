@@ -541,6 +541,7 @@ impl<'a, 'b> MacroExpander<'a, 'b> {
             // feature-gate the macro invocation
             if let Some((feature, issue)) = unstable_feature {
                 // only if the outer span doesn't allow unstable invocations
+                // TODO: compare crates of span and def_site_span (can't figure out how)
                 if !span.allows_unstable() && self_.cx.ecfg.features.map_or(true, |feats| {
                     // macro features will count as lib features
                     !feats.declared_lib_features.iter().any(|&(feat, _)| feat == feature)

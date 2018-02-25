@@ -8,10 +8,15 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-// aux-build:macro-stability.rs
+// aux-build:unstable-macros.rs
 
-#[macro_use] extern crate macros;
+#![feature(staged_api)]
+#[macro_use] extern crate unstable_macros;
+
+#[unstable(feature = "local_unstable", issue = "42069")]
+macro_rules! local_unstable { () => () }
 
 fn main() {
+    local_unstable!();
     unstable_macro!(); //~ ERROR: macro unstable_macro! is unstable
 }
