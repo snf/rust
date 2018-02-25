@@ -18,7 +18,7 @@ use ext::base::*;
 use ext::derive::{add_derived_markers, collect_derives};
 use ext::hygiene::{Mark, SyntaxContext};
 use ext::placeholders::{placeholder, PlaceholderExpander};
-use feature_gate::{self, Features, is_builtin_attr};
+use feature_gate::{self, Features, GateIssue, is_builtin_attr, emit_feature_err};
 use fold;
 use fold::*;
 use parse::{DirectoryOwnership, PResult};
@@ -531,11 +531,33 @@ impl<'a, 'b> MacroExpander<'a, 'b> {
         let path = &mac.node.path;
 
         let ident = ident.unwrap_or_else(|| keywords::Invalid.ident());
-        let validate_and_set_expn_info = |def_site_span,
+        let validate_and_set_expn_info = |self_: &mut Self, // arg instead of capture
+                                          def_site_span,
                                           allow_internal_unstable,
-                                          allow_internal_unsafe| {
+                                          allow_internal_unsafe,
+                                          // can't infer this type
+                                          unstable_feature: Option<(Symbol, u32)>| {
+
+            // feature-gate the macro invocation
+            if let Some((feature, issue)) = unstable_feature {
+                // only if the outer span doesn't allow unstable invocations
+                if !span.allows_unstable() && self_.cx.ecfg.features.map_or(true, |feats| {
+                    // macro features will count as lib features
+                    !feats.declared_lib_features.iter().any(|&(feat, _)| feat == feature)
+                }) {
+                    let explain = format!("macro {}! is unstable", path);
+                    emit_feature_err(self_.cx.parse_sess, &*feature.as_str(), span,
+                                     GateIssue::Library(Some(issue)), &explain);
+                    self_.cx.trace_macros_diag();
+                    return Err(kind.dummy(span));
+                }
+            }
+
             if ident.name != keywords::Invalid.name() {
-                return Err(format!("macro {}! expects no ident argument, given '{}'", path, ident));
+                let msg = format!("macro {}! expects no ident argument, given '{}'", path, ident);
+                self_.cx.span_err(path.span, &msg);
+                self_.cx.trace_macros_diag();
+                return Err(kind.dummy(span));
             }
             mark.set_expn_info(ExpnInfo {
                 call_site: span,
@@ -551,11 +573,9 @@ impl<'a, 'b> MacroExpander<'a, 'b> {
 
         let opt_expanded = match *ext {
             DeclMacro(ref expand, def_span) => {
-                if let Err(msg) = validate_and_set_expn_info(def_span.map(|(_, s)| s),
-                                                             false, false) {
-                    self.cx.span_err(path.span, &msg);
-                    self.cx.trace_macros_diag();
-                    kind.dummy(span)
+                if let Err(dummy_span) = validate_and_set_expn_info(self, def_span.map(|(_, s)| s),
+                                                                    false, false, None) {
+                    dummy_span
                 } else {
                     kind.make_from(expand.expand(self.cx, span, mac.node.stream()))
                 }
@@ -565,14 +585,14 @@ impl<'a, 'b> MacroExpander<'a, 'b> {
                 ref expander,
                 def_info,
                 allow_internal_unstable,
-                allow_internal_unsafe
+                allow_internal_unsafe,
+                unstable_feature,
             } => {
-                if let Err(msg) = validate_and_set_expn_info(def_info.map(|(_, s)| s),
-                                                             allow_internal_unstable,
-                                                             allow_internal_unsafe) {
-                    self.cx.span_err(path.span, &msg);
-                    self.cx.trace_macros_diag();
-                    kind.dummy(span)
+                if let Err(dummy_span) = validate_and_set_expn_info(self, def_info.map(|(_, s)| s),
+                                                                    allow_internal_unstable,
+                                                                    allow_internal_unsafe,
+                                                                    unstable_feature) {
+                    dummy_span
                 } else {
                     kind.make_from(expander.expand(self.cx, span, mac.node.stream()))
                 }

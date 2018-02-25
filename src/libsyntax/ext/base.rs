@@ -554,6 +554,8 @@ pub enum SyntaxExtension {
         /// Whether the contents of the macro can use `unsafe`
         /// without triggering the `unsafe_code` lint.
         allow_internal_unsafe: bool,
+        /// The macro's feature name if it is unstable, and the stability feature
+        unstable_feature: Option<(Symbol, u32)>,
     },
 
     /// A function-like syntax extension that has an extra ident before
