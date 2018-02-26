@@ -671,6 +671,7 @@ pub struct ExpansionData {
     pub depth: usize,
     pub module: Rc<ModuleData>,
     pub directory_ownership: DirectoryOwnership,
+    pub crate_span: Option<Span>,
 }
 
 /// One of these is made during expansion and incrementally updated as we go;
@@ -702,6 +703,7 @@ impl<'a> ExtCtxt<'a> {
                 depth: 0,
                 module: Rc::new(ModuleData { mod_path: Vec::new(), directory: PathBuf::new() }),
                 directory_ownership: DirectoryOwnership::Owned { relative: None },
+                crate_span: None,
             },
             expansions: HashMap::new(),
         }
