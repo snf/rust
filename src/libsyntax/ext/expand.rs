@@ -532,8 +532,8 @@ impl<'a, 'b> MacroExpander<'a, 'b> {
         let path = &mac.node.path;
 
         let ident = ident.unwrap_or_else(|| keywords::Invalid.ident());
-        let validate_and_set_expn_info = |self_: &mut Self, // arg instead of capture
-                                          def_site_span,
+        let validate_and_set_expn_info = |this: &mut Self, // arg instead of capture
+                                          def_site_span: Option<Span>,
                                           allow_internal_unstable,
                                           allow_internal_unsafe,
                                           // can't infer this type
@@ -541,25 +541,26 @@ impl<'a, 'b> MacroExpander<'a, 'b> {
 
             // feature-gate the macro invocation
             if let Some((feature, issue)) = unstable_feature {
-                let crate_span = self_.cx.current_expansion.crate_span.unwrap();
+                let crate_span = this.cx.current_expansion.crate_span.unwrap();
                 // don't stability-check macros in the same crate
-                if !crate_span.contains(def_site_span)
-                    && !span.allows_unstable() && self_.cx.ecfg.features.map_or(true, |feats| {
+                // (the only time this is null is for syntax extensions registered as macros)
+                if def_site_span.map_or(false, |def_span| !crate_span.contains(def_span))
+                    && !span.allows_unstable() && this.cx.ecfg.features.map_or(true, |feats| {
                     // macro features will count as lib features
                     !feats.declared_lib_features.iter().any(|&(feat, _)| feat == feature)
                 }) {
                     let explain = format!("macro {}! is unstable", path);
-                    emit_feature_err(self_.cx.parse_sess, &*feature.as_str(), span,
+                    emit_feature_err(this.cx.parse_sess, &*feature.as_str(), span,
                                      GateIssue::Library(Some(issue)), &explain);
-                    self_.cx.trace_macros_diag();
+                    this.cx.trace_macros_diag();
                     return Err(kind.dummy(span));
                 }
             }
 
             if ident.name != keywords::Invalid.name() {
                 let msg = format!("macro {}! expects no ident argument, given '{}'", path, ident);
-                self_.cx.span_err(path.span, &msg);
-                self_.cx.trace_macros_diag();
+                this.cx.span_err(path.span, &msg);
+                this.cx.trace_macros_diag();
                 return Err(kind.dummy(span));
             }
             mark.set_expn_info(ExpnInfo {
