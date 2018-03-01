@@ -554,6 +554,8 @@ pub enum SyntaxExtension {
         /// Whether the contents of the macro can use `unsafe`
         /// without triggering the `unsafe_code` lint.
         allow_internal_unsafe: bool,
+        /// The macro's feature name if it is unstable, and the stability feature
+        unstable_feature: Option<(Symbol, u32)>,
     },
 
     /// A function-like syntax extension that has an extra ident before
@@ -669,6 +671,7 @@ pub struct ExpansionData {
     pub depth: usize,
     pub module: Rc<ModuleData>,
     pub directory_ownership: DirectoryOwnership,
+    pub crate_span: Option<Span>,
 }
 
 /// One of these is made during expansion and incrementally updated as we go;
@@ -700,6 +703,7 @@ impl<'a> ExtCtxt<'a> {
                 depth: 0,
                 module: Rc::new(ModuleData { mod_path: Vec::new(), directory: PathBuf::new() }),
                 directory_ownership: DirectoryOwnership::Owned { relative: None },
+                crate_span: None,
             },
             expansions: HashMap::new(),
         }
