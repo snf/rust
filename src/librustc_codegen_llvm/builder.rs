@@ -973,8 +973,10 @@ impl BuilderMethods<'a, 'tcx> for Builder<'a, 'll, 'tcx> {
         let dst = self.pointercast(dst, self.type_i8p());
         let src = self.pointercast(src, self.type_i8p());
         unsafe {
-            llvm::LLVMRustBuildElementUnorderedAtomicMemCpy(self.llbuilder, dst, dst_align.bytes() as c_uint,
-                                                            src, src_align.bytes() as c_uint, size, element_size);
+            llvm::LLVMRustBuildElementUnorderedAtomicMemCpy(self.llbuilder, dst,
+                                                            dst_align.bytes() as c_uint,
+                                                            src, src_align.bytes() as c_uint, size,
+                                                            element_size);
         }
     }
 
@@ -1001,7 +1003,8 @@ impl BuilderMethods<'a, 'tcx> for Builder<'a, 'll, 'tcx> {
         let ptr = self.pointercast(ptr, self.type_i8p());
         let ret_ref = unsafe {
             llvm::LLVMRustBuildElementUnorderedAtomicMemSet(self.llbuilder, ptr, fill_byte,
-                                                            size, align.bytes() as c_uint, element_size)
+                                                            size, align.bytes() as c_uint,
+                                                            element_size)
         };
         if ret_ref.is_none() {
             bug!("llvm.memset.element.unordered.atomic.* is not supported with LLVM prior to 7.0");

@@ -104,8 +104,9 @@ impl IntrinsicCallMethods<'tcx> for Builder<'a, 'll, 'tcx> {
 
         let invalid_integer_monomorphization = |ty| {
             span_invalid_monomorphization_error(tcx.sess, span,
-                                                &format!("invalid monomorphization of `{}` intrinsic: \
-                                                         expected basic integer type, found `{}`", name, ty));
+                                                &format!("invalid monomorphization of `{}` \
+                                                         intrinsic: expected basic integer type, \
+                                                         found `{}`", name, ty));
         };
 
 

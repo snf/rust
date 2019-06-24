@@ -30,7 +30,8 @@ mod rusti {
         pub fn atomic_xsub_acq<T>(dst: *mut T, src: T) -> T;
         pub fn atomic_xsub_rel<T>(dst: *mut T, src: T) -> T;
 
-        pub fn atomic_element_copy_nonoverlapping_memory_unordered<T>(dst: *mut T, src: *const T, count: usize);
+        pub fn atomic_element_copy_nonoverlapping_memory_unordered<T>(dst: *mut T, src: *const T,
+                                                                      count: usize);
         pub fn atomic_element_copy_memory_unordered<T>(dst: *mut T, src: *const T, count: usize);
         pub fn atomic_element_set_memory_unordered<T>(dst: *mut T, val: u8, count: usize);
     }
